@@ -1,0 +1,18 @@
+# Komprimeringsalgoritm — svenska
+
+**Granskade källor:** `ctf-agent11.md`, `ctf-agent13.md` och `ctf-agent21.md`.
+
+## Lösningsmetod steg för steg
+
+1. Använd utmaningsfilerna `bitzip.py` och `out.bitzip` (Agent 13 anger sökvägen `challenges/komprimeringsalgoritm/distfiles/out.bitzip`). Läs först `bitzip.py`: varje 8-bitars tecken delas i fyra 2-bitarsgrupper från `00`, `01`, `10`, `11`; gruppfrekvenserna rangordnas fallande och tilldelas prefixkoderna `0`, `10`, `110`, `111`. De komprimerade koderna skrivs direkt till filen och utdata utfylls till bytegräns; ingen mappningstabell eller ursprunglig teckenlängd sparas.
+2. Omvandla varje byte i `out.bitzip` till åtta bitar och behåll inledande nollor. Läs strömmen från vänster till höger med prefixkodlängderna 1, 2 och 3. Vid varje position prövas `0` och därefter de giltiga två- respektive trebittskoderna; avge motsvarande 2-bitarsymbol för den aktuella kandidatmappningen och gå vidare så många bitar som koden upptar. Om ingen kod passar är kandidaten ogiltig.
+3. Det finns exakt 24 mappningar eftersom de fyra 2-bitarsymbolerna kan tilldelas fyra koder på `4!` sätt. Samla för varje mappning de avkodade 2-bitarsymbolerna i grupper om fyra och omvandla varje grupp till en byte: för gruppvärdena `v0..v3` är byten `(v0<<6) | (v1<<4) | (v2<<2) | v3`. Agent 11 anger packningen som `sum(perm[v[a+j]] << (6-2*j) for j in range(4))`.
+4. Tolka byteföljden som text. Agent 11 behåller utskrivbara ASCII-kandidater och anger att rätt numerisk permutation är `(1,0,3,2)`, där permutationens värden mappar avkodade index till 2-bitarsvärden i ordningen `00`, `01`, `10`, `11`. Agenterna 13 och 21 anger samma tilldelning i kodordningen `0`, `10`, `110`, `111`: `01`, `00`, `11`, `10`. Agent 13:s sökning letar efter utmaningens förväntade flaggprefix; dess källskript avkodar med Latin-1 och ignorerar ofullständiga slutgrupper. Den exakta kandidattexten är `<FLAGGA REDIGERAD>`.
+5. Hantera bitutfyllnaden. Agent 13 gör om filbyte till en bitsträng med åtta bitar per byte, läser koder girigt och avger endast hela grupper om fyra avkodade symboler. Agent 21 skapar en big-endian-bitsträng utfylld med inledande nollor, prövar kodlängderna 1, 2 och 3 och avvisar strömmar som inte kan parsas eller vars antal avkodade symboler inte är delbart med fyra. Agent 11 beskriver byteutfyllnad men anger inte hur den tas bort. En kandidat med utfyllnad på slutet kan därför skilja sig mellan avkodarna; använd kontrollen av läsbar text/format utan att återge hemlig utdata.
+6. Agent 13 säger att den valda permutation gav en kandidat som publicerades i ett NFS-event; Agent 11 beskriver den återvunna texten som en inramad `FLAG`-banner; Agent 21 säger att den avkodade texten kan omges av utfyllnadstecken som `U`, `T` eller NUL. Dessa utdata beskrivs olika i källorna. Flaggan fås från den avkodade texten, men dess bokstavliga värde utelämnas.
+
+## Begränsningar i källorna
+
+Alla tre writeupsen är överens om de fyra prefixkoderna och sökning bland 24 permutationer; de två detaljerade källorna är överens om den rapporterade mappningen. De anger inte en gemensam hantering av avslutande utfyllnad eller identisk urvalslogik. Agent 21:s exempel söker efter den generiska delsträngen `flag{`, medan andra källor använder evenemangets `cratectf`-format. Agent 13 uppger att en kandidat publicerades, men ingen av anteckningarna belägger godkännande på plattformen. Den avkodade flaggan och den omgivande hemliga texten ingår inte.
+
+**Avkodat resultat:** `<FLAGGA REDIGERAD>` — fås genom att avkoda bitströmmen med den angivna kod-till-symbol-mappningen och välja det läsbara resultatet.

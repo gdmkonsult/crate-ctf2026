@@ -1,0 +1,18 @@
+# Komprimeringsalgoritm — English
+
+**Sources reviewed:** `ctf-agent11.md`, `ctf-agent13.md`, and `ctf-agent21.md`.
+
+## Step-by-step method
+
+1. Use the challenge files `bitzip.py` and `out.bitzip` (Agent 13 gives the path `challenges/komprimeringsalgoritm/distfiles/out.bitzip`). Read `bitzip.py` first: each 8-bit character is split into four 2-bit groups from `00`, `01`, `10`, `11`; the four group frequencies are ranked descending and assigned prefix codes `0`, `10`, `110`, `111`. The compressed codes are written directly to the file, with output padded to byte boundaries; no mapping table or original character count is stored.
+2. Convert every byte of `out.bitzip` to eight bits, preserving leading zeros, and parse the stream left-to-right using the prefix code lengths 1, 2, and 3. At each position, test `0`, then the applicable two-bit code, then the three-bit codes; emit the corresponding 2-bit symbol for the current candidate mapping and advance by the matched code length. If no code matches, that candidate is invalid.
+3. There are exactly 24 mappings because the four 2-bit symbols can be assigned to four codes in `4!` ways. For each mapping, collect decoded 2-bit symbols in groups of four and convert each group to one byte: for group values `v0..v3`, the byte is `(v0<<6) | (v1<<4) | (v2<<2) | v3`. Agent 11 gives this packing as `sum(perm[v[a+j]] << (6-2*j) for j in range(4))`.
+4. Interpret the bytes as text. Agent 11 keeps printable-ASCII candidates and reports that the right numeric permutation is `(1,0,3,2)`, where the permutation maps decoded indices to 2-bit values in order `00`, `01`, `10`, `11`. Agents 13 and 21 report the equivalent assignment in code order `0`, `10`, `110`, `111`: `01`, `00`, `11`, `10`. Agent 13's search checks for the event's expected flag prefix; its source script decodes with Latin-1 and ignores incomplete final groups. The exact candidate text is `<FLAG REDACTED>`.
+5. Account for bit padding. Agent 13 turns file bytes into an eight-bit-per-byte string, greedily parses codes, and emits only full groups of four decoded symbols. Agent 21 converts the bytes to a zero-padded big-endian bit string, tries code lengths 1, 2, and 3, and rejects streams that fail parsing or whose decoded symbol count is not divisible by four. Agent 11 describes byte-padded output but does not document how padding is removed. Thus a candidate that ends in padding may differ depending on the decoder; use the described readable-text/format check without reproducing the secret output.
+6. Agent 13 says the selected permutation yielded a candidate which it published in an NFS event; Agent 11 describes the recovered text as a boxed `FLAG` banner; Agent 21 says decoded text may be surrounded by padding characters such as `U`, `T`, or NUL. These are distinct output descriptions in the sources. The flag is obtained from the decoded text, but its literal value is withheld.
+
+## Source limitations
+
+All three writeups agree on the four prefix codes and the 24-permutation search; the two detailed sources agree on the reported mapping. They do not give one consistent treatment of trailing padding or identical selection logic. Agent 21's example checks for a generic `flag{` substring while other sources use the event's `cratectf` format. Agent 13 reports publishing a candidate, but none of these notes establishes platform acceptance. The decoded flag and surrounding secret text are not included.
+
+**Decoded output:** `<FLAG REDACTED>` — recovered by decoding the bitstream with the reported code-to-symbol mapping and selecting the readable result.
